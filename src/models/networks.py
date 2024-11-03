@@ -17,6 +17,24 @@ def weights_init(m):
         init.normal_(m.weight.data, 1.0, 0.02)
         init.constant_(m.bias.data, 0)
 
+def define_discriminator(input_nc, ndf, discrim_type="patch", n_layers=3):
+    """Create a discriminator
+    Parameters:
+        input_nc (int)      -- the number of channels in input images
+        ndf (int)           -- the number of filters in the first conv layer
+        discrim_type (str)  -- the arhitecture's name: patch
+        n_layers (int)      -- the number of conv layers in the discriminator
+    
+    Returns a discriminator
+    """
+
+    net = None
+    if discrim_type == "patch":
+        net = PatchDiscriminator(input_nc, ndf, n_layers=3)
+    
+    net.apply(weights_init)
+    return net
+
 class DiscriminatorCNNBlock(nn.Module):
     """Defines a discriminator CNN block"""
 
@@ -75,4 +93,4 @@ class PatchDiscriminator(nn.Module):
         self.model = nn.Sequential(*layers)
     
     def forward(self, input):
-        return self.model(input) 
+        return self.model(input)
