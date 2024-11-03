@@ -5,6 +5,11 @@ from torch.nn import init
 
 
 def weights_init(m):
+    """Define the initialization function
+    Parameters:
+        m (torch.nn) -- the torch module like Conv or BatchNorm
+    """
+
     classname = m.__class__.__name__
     if classname.find("Conv") != -1:
         init.normal_(m.weight.data, 0.0, 0.02)
