@@ -35,6 +35,23 @@ def define_discriminator(input_nc, ndf, discrim_type="patch", n_layers=3):
     net.apply(weights_init)
     return net
 
+def define_generator(input_nc, ndf, generator_type="unet"):
+    """Create a generator
+    Parameters:
+        input_nc (int)        -- the number of channels in input images
+        ndf (int)             -- the number of filters in the first conv layer
+        generator_type (str)  -- the arhitecture's name: unet
+    
+    Returns a generator
+    """
+
+    net = None
+    if generator_type == "unet":
+        net = UnetGenerator(input_nc, ndf)
+    
+    net.apply(weights_init)
+    return net
+
 class DiscriminatorCNNBlock(nn.Module):
     """Defines a discriminator CNN block"""
 
