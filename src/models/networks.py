@@ -124,3 +124,65 @@ class GeneratorCNNBlock(nn.Module):
     def forward(self, x):
         return self.dropout(self.conv(x)) if self.use_dropout else self.conv(x)
     
+class UnetGenerator(nn.Module):
+    """Defines a Unet generator"""
+
+    def __init__(self, in_channels=3, features=64, norm_layer=nn.BatchNorm2d):
+        """Construct Unet generator
+        Parameters:
+            in_channels (int)     -- the number of channels in the input image
+            features (int)        -- the number of filters in the first conv layer
+            norm_layer (torch.nn) -- normalization layer
+        """
+        # TODO: Rewrite creating gen blocks in a loop. This implementation is designed for 256x256 resolution.
+
+        super().__init__()
+        
+        self.initial_down = nn.Sequential(
+            nn.Conv2d(in_channels, features, kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
+            nn.LeakyReLU(0.2),
+        ) # 128 x 128
+        
+        self.down1 = GeneratorCNNBlock(features, features * 2, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 64 x 64
+        self.down2 = GeneratorCNNBlock(features * 2, features * 4, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 32 x 32
+        self.down3 = GeneratorCNNBlock(features * 4, features * 8, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 16 x 16
+        self.down4 = GeneratorCNNBlock(features * 8, features * 8, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 8 x 8
+        self.down5 = GeneratorCNNBlock(features * 8, features * 8, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 4 x 4
+        self.down6 = GeneratorCNNBlock(features * 8, features * 8, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 2 x 2
+        
+        self.bottleneck = nn.Sequential(
+            nn.Conv2d(features * 8, features * 8, 4, 2, 1, padding_mode="reflect"), # 1 x 1
+            nn.ReLU()
+        )
+        
+        self.up1 = GeneratorCNNBlock(features * 8, features * 8, down=False, activation="relu", use_dropout=True, norm_layer=norm_layer)
+        self.up2 = GeneratorCNNBlock(features * 8 * 2, features * 8, down=False, activation="relu", use_dropout=True, norm_layer=norm_layer)
+        self.up3 = GeneratorCNNBlock(features * 8 * 2, features * 8, down=False, activation="relu", use_dropout=True, norm_layer=norm_layer)
+        self.up4 = GeneratorCNNBlock(features * 8 * 2, features * 8, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
+        self.up5 = GeneratorCNNBlock(features * 8 * 2, features * 4, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
+        self.up6 = GeneratorCNNBlock(features * 4 * 2, features * 2, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
+        self.up7 = GeneratorCNNBlock(features * 2 * 2, features, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
+        
+        self.final_up = nn.Sequential(
+            nn.ConvTranspose2d(features * 2, in_channels, kernel_size=4, stride=2, padding=1),
+            nn.Tanh(),
+        )
+    
+    def forward(self, x):
+        x0 = self.initial_down(x)
+        x1 = self.down1(x0)
+        x2 = self.down2(x1)
+        x3 = self.down3(x2)
+        x4 = self.down4(x3)
+        x5 = self.down5(x4)
+        x6 = self.down6(x5)
+        x_ = self.bottleneck(x6)
+        x_ = self.up1(x_)
+        x_ = self.up2(torch.concat([x6, x_], dim=1))
+        x_ = self.up3(torch.concat([x5, x_], dim=1))
+        x_ = self.up4(torch.concat([x4, x_], dim=1))
+        x_ = self.up5(torch.concat([x3, x_], dim=1))
+        x_ = self.up6(torch.concat([x2, x_], dim=1))
+        x_ = self.up7(torch.concat([x1, x_], dim=1))
+        x_ = self.final_up(torch.concat([x0, x_], dim=1))
+        return x_ 
