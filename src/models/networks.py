@@ -42,7 +42,7 @@ class DiscriminatorCNNBlock(nn.Module):
         """Construct a convolutional block.
         Parameters:
             in_channels (int)  -- the number of channels in the input 
-            out_channels (int) -- the number of channels int the ouput when applyed this block
+            out_channels (int) -- the number of channels in the ouput when applyed this block
             norm_layer         -- normalization layer 
             stride (int)       -- the stride of conv layer
         """
@@ -94,3 +94,33 @@ class PatchDiscriminator(nn.Module):
     
     def forward(self, input):
         return self.model(input)
+
+class GeneratorCNNBlock(nn.Module):
+    """Defines a generator CNN block"""
+
+    def __init__(self, in_channels, out_channels, down=True, activation="relu", use_dropout=False, norm_layer=nn.BatchNorm2d):
+        """Construct a generator CNN block
+        Parameters:
+            in_channels (int)            -- the number of channels in the input 
+            out_channels (int)           -- the number of channels in the ouput when applyed this block
+            down (bool)                  -- the type of conv layer. if down=True Conv2d(stride=2) else ConvTranspose2d
+            activation (str)             -- the name of activation function: relu | another names
+            use_dropout (bool)           -- if the flag is True then will add nn.Dropout after conv layer
+            norm_layer (torch.nn)        -- normalization layer   
+        """
+
+        super(GeneratorCNNBlock, self).__init__()
+        
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, 4, 2, 1, padding_mode="reflect", bias=False) if down 
+            else nn.ConvTranspose2d(in_channels, out_channels, 4, 2, 1, bias=False),
+            norm_layer(out_channels),
+            nn.ReLU() if activation == "relu" else nn.LeakyReLU(0.2), 
+        )
+        
+        self.use_dropout = use_dropout
+        self.dropout = nn.Dropout(0.5)
+    
+    def forward(self, x):
+        return self.dropout(self.conv(x)) if self.use_dropout else self.conv(x)
+    
