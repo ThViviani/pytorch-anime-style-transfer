@@ -12,5 +12,8 @@ def denorm_tensor(tensor, mean, std):
 
     mean = torch.tensor(mean).view(1, -1, 1, 1)
     std = torch.tensor(std).view(1, -1, 1, 1)
-    
+    if tensor.is_cuda:
+        mean = mean.cuda()
+        std = std.cuda()
+        
     return tensor * std + mean
