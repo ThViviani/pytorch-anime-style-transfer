@@ -3,7 +3,6 @@ import torch.nn as nn
 import lightning as L
 import torch.nn.functional as F
 
-from options import TrainOptions as tropt
 
 class ConditionalGAN(L.LightningModule):
     """Defines a Conditional GAN"""
