@@ -27,6 +27,7 @@ class ConditionalGAN(L.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         d_optimizer, g_optimizer = self.optimizers()
+        bce = nn.BCEWithLogitsLoss()
 
         # TRAIN DISCRIMINATOR
         self.discriminator.zero_grad()
@@ -34,13 +35,13 @@ class ConditionalGAN(L.LightningModule):
         # forward pass with real batch
         d_output_real = self.discriminator(x, y)
         real_labels = torch.ones_like(d_output_real).cuda()
-        d_real_error = F.binary_cross_entropy(d_output_real, real_labels)
+        d_real_error = bce(d_output_real, real_labels)
 
         # forward pass with fake images
         fake_images = self.generator(x)
         d_output_fake = self.discriminator(x, fake_images)
         fake_labels = torch.zeros_like(d_output_fake).cuda()
-        d_fake_error = F.binary_cross_entropy(d_output_fake, fake_labels)
+        d_fake_error = bce(d_output_fake, fake_labels)
 
         # update discriminator
         d_error_full = (d_real_error + d_fake_error) / 2.0
@@ -53,7 +54,7 @@ class ConditionalGAN(L.LightningModule):
         fake_images = self.generator(x)
         d_output_fake = self.discriminator(x, fake_images)
         real_labels = torch.ones_like(d_output_fake).cuda()
-        g_error = F.binary_cross_entropy(d_output_fake, real_labels)
+        g_error = bce(d_output_fake, real_labels)
 
         l1_error = F.l1_loss(fake_images, y) * self.opt.l1_lambda
         g_error += l1_error
@@ -69,7 +70,7 @@ class ConditionalGAN(L.LightningModule):
         tensorboard = self.logger.experiment
         tensorboard.add_images(
             "generated_images", 
-            # denorm_tensor(torch.concat([self.generator(x), y], dim=0), [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
+            denorm_tensor(torch.concat([self.generator(x), y], dim=0), [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
             torch.concat([self.generator(x), y], dim=0), 
             self.current_epoch
         )

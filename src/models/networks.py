@@ -106,7 +106,7 @@ class PatchDiscriminator(nn.Module):
             in_channel = out_channel
         
         layers += [DiscriminatorCNNBlock(in_channel, 1, norm_layer, stride=1)]
-        layers += [nn.Sigmoid()]
+        # layers += [nn.Sigmoid()]
         
         self.model = nn.Sequential(*layers)
     
