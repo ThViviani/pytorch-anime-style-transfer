@@ -17,37 +17,38 @@ def weights_init(m):
         init.normal_(m.weight.data, 1.0, 0.02)
         init.constant_(m.bias.data, 0)
 
-def define_discriminator(input_nc, ndf, discrim_type="patch", n_layers=3):
+def define_discriminator(input_nc, ndf, discrim_type="patch", n_layers=3, norm_layer=nn.BatchNorm2d):
     """Create a discriminator
     Parameters:
-        input_nc (int)      -- the number of channels in input images
-        ndf (int)           -- the number of filters in the first conv layer
-        discrim_type (str)  -- the arhitecture's name: patch
-        n_layers (int)      -- the number of conv layers in the discriminator
-    
+        input_nc (int)        -- the number of channels in input images
+        ndf (int)             -- the number of filters in the first conv layer
+        discrim_type (str)    -- the arhitecture's name: patch
+        n_layers (int)        -- the number of conv layers in the discriminator
+        norm_layer (torch.nn) -- normalization layer 
     Returns a discriminator
     """
 
     net = None
     if discrim_type == "patch":
-        net = PatchDiscriminator(input_nc, ndf, n_layers=3)
+        net = PatchDiscriminator(input_nc, ndf, n_layers=3, norm_layer=norm_layer)
     
     net.apply(weights_init)
     return net
 
-def define_generator(input_nc, ndf, generator_type="unet"):
+def define_generator(input_nc, ndf, generator_type="unet", norm_layer=nn.BatchNorm2d):
     """Create a generator
     Parameters:
         input_nc (int)        -- the number of channels in input images
         ndf (int)             -- the number of filters in the first conv layer
         generator_type (str)  -- the arhitecture's name: unet
+        norm_layer (torch.nn) -- normalization layer 
     
     Returns a generator
     """
 
     net = None
     if generator_type == "unet":
-        net = UnetGenerator(input_nc, ndf)
+        net = UnetGenerator(input_nc, ndf, norm_layer=norm_layer)
     
     net.apply(weights_init)
     return net

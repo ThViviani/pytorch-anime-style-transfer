@@ -4,7 +4,6 @@ import lightning as L
 import torch.nn.functional as F
 
 from options import TrainOptions as tropt
-from networks import define_discriminator, define_generator
 
 class ConditionalGAN(L.LightningModule):
     """Defines a Conditional GAN"""
