@@ -75,7 +75,6 @@ class ConditionalGAN(L.LightningModule):
         
         return history
 
-
     def configure_optimizers(self):
         discriminator_optimizer = torch.optim.Adam(
             self.discriminator.parameters(), 
@@ -86,6 +85,6 @@ class ConditionalGAN(L.LightningModule):
         generator_optimizer = torch.optim.Adam(
             self.generator.parameters(), 
             lr=self.opt.lr, 
-            betas=self.opt.lr
+            betas=self.opt.betas
         )
         return [discriminator_optimizer, generator_optimizer]
