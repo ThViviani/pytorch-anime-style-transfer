@@ -71,7 +71,6 @@ class ConditionalGAN(L.LightningModule):
         tensorboard.add_images(
             "generated_images", 
             denorm_tensor(torch.concat([self.generator(x), y], dim=0), [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
-            torch.concat([self.generator(x), y], dim=0), 
             self.current_epoch
         )
         
