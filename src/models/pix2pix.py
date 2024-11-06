@@ -9,7 +9,7 @@ from ..data.utils import denorm_tensor
 class ConditionalGAN(L.LightningModule):
     """Defines a Conditional GAN"""
 
-    def __init__(self, discriminator, generator, opt):
+    def __init__(self, discriminator=None, generator=None, opt=None):
         """Construct a Conditional GAN
         Parameters:
             discriminator (Discriminator class) -- the Discriminator for the cGAN; Discriminator class: PatchDiscriminator | ...
