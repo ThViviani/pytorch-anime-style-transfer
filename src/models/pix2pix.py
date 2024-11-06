@@ -3,6 +3,8 @@ import torch.nn as nn
 import lightning as L
 import torch.nn.functional as F
 
+from ..data.utils import denorm_tensor
+
 
 class ConditionalGAN(L.LightningModule):
     """Defines a Conditional GAN"""
@@ -65,7 +67,12 @@ class ConditionalGAN(L.LightningModule):
 
         # saved generated images
         tensorboard = self.logger.experiment
-        tensorboard.add_images("generated_images", torch.concat([self.generator(x), y], dim=0), self.current_epoch)
+        tensorboard.add_images(
+            "generated_images", 
+            denorm_tensor(torch.concat([self.generator(x), y], dim=0), [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]), 
+            self.current_epoch
+        )
+        
         return history
 
 
