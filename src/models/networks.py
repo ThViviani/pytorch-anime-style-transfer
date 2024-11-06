@@ -110,7 +110,8 @@ class PatchDiscriminator(nn.Module):
         
         self.model = nn.Sequential(*layers)
     
-    def forward(self, input):
+    def forward(self, x, y):
+        input = torch.concat([x, y], dim=1)
         return self.model(input)
 
 class GeneratorCNNBlock(nn.Module):
