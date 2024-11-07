@@ -219,3 +219,24 @@ class UnetGenerator(nn.Module):
         x_ = self.up7(torch.concat([x1, x_], dim=1))
         x_ = self.final_up(torch.concat([x0, x_], dim=1))
         return x_ 
+
+class ResidualBlock(nn.Module):
+    """Defines a original Residual block"""
+
+    def __init__(self, channels, norm_layer=nn.InstanceNorm2d):
+        """Construct a Residual block
+        Parameters:
+            channels (int)            -- the number of channels in the input 
+            norm_layer (torch.nn)     -- normalization layer   
+        """
+        
+        self.block = nn.Sequential(
+            GeneratorCNNBlock(channels, channels, activation="relu", kernel_size=3, padding=1, stride=1, norm_layer=norm_layer),
+            GeneratorCNNBlock(channels, channels, activation="identity", kernel_size=3, padding=1, stride=1, norm_layer=norm_layer)
+        )
+
+        self.relu = nn.ReLU()
+        
+
+    def forward(self, x):
+        return self.relu(x + self.block(x))
