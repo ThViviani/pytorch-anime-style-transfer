@@ -230,13 +230,55 @@ class ResidualBlock(nn.Module):
             norm_layer (torch.nn)     -- normalization layer   
         """
         
+        super().__init__()
+
         self.block = nn.Sequential(
             GeneratorCNNBlock(channels, channels, activation="relu", kernel_size=3, padding=1, stride=1, norm_layer=norm_layer),
             GeneratorCNNBlock(channels, channels, activation="identity", kernel_size=3, padding=1, stride=1, norm_layer=norm_layer)
         )
 
-        self.relu = nn.ReLU()
+        # self.relu = nn.ReLU() see ResnetBlock in the https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/models/networks.py#L316 
         
 
     def forward(self, x):
-        return self.relu(x + self.block(x))
+        return x + self.block(x)
+    
+class ResidualGenerator(nn.Module):
+    def __init__(self, img_channels=3, ndf=64, num_residuals=9, norm_layer=nn.InstanceNorm2d):
+        
+        super().__init__()
+
+        self.initial = nn.Sequential(
+            nn.Conv2d(img_channels, ndf, kernel_size=7, stride=1, padding=3, padding_mode="reflect"),
+            norm_layer(ndf),
+            nn.ReLU(inplace=True)
+        )
+
+        self.down_block = nn.Sequential(
+            GeneratorCNNBlock(ndf, ndf * 2, kernel_size=3, stride=2, padding=1, norm_layer=norm_layer),
+            GeneratorCNNBlock(ndf * 2, ndf * 4, kernel_size=3, stride=2, padding=1, norm_layer=norm_layer)
+        )
+
+        self.residuals_blocks = nn.Sequential(
+            *[ResidualBlock(ndf * 4) for _ in range(num_residuals)]
+        )
+
+        self.up_block = nn.Sequential(
+            GeneratorCNNBlock(ndf * 4, ndf * 2, kernel_size=3, stride=2, padding=1, down=False, norm_layer=norm_layer, output_padding=1),
+            GeneratorCNNBlock(ndf * 2, ndf, kernel_size=3, stride=2, padding=1, down=False, norm_layer=norm_layer, output_padding=1)
+        )
+
+        self.final_block = nn.Conv2d(ndf, img_channels, kernel_size=7, stride=1, padding=3, padding_mode="reflect")
+
+    def forward(self, x):
+        x = self.initial(x)
+        x = self.down_block(x)
+        x = self.residuals_blocks(x)
+        x = self.up_block(x)
+        x = self.final_block(x)
+        return x
+
+
+img = torch.randn((1, 3, 256, 256))
+g = ResidualGenerator()
+print(g(img).shape)
