@@ -117,7 +117,7 @@ class PatchDiscriminator(nn.Module):
 class GeneratorCNNBlock(nn.Module):
     """Defines a generator CNN block"""
 
-    def __init__(self, in_channels, out_channels, down=True, activation="relu", use_dropout=False, norm_layer=nn.BatchNorm2d):
+    def __init__(self, in_channels, out_channels, down=True, activation="relu", use_dropout=False, norm_layer=nn.BatchNorm2d, **kwargs):
         """Construct a generator CNN block
         Parameters:
             in_channels (int)            -- the number of channels in the input 
@@ -130,11 +130,25 @@ class GeneratorCNNBlock(nn.Module):
 
         super(GeneratorCNNBlock, self).__init__()
         
+        kernel_size = kwargs.get("kernel_size", 4)
+        stride =  kwargs.get("stride", 2)
+        padding = kwargs.get("padding", 1)
+        
+        use_bias = True if norm_layer == nn.InstanceNorm2d else False
+
+        activation_module = None
+        if activation == "relu":
+            activation_module = nn.ReLU(inplace=True)
+        elif activation == "identity":
+            activation_module = nn.Identity()
+        else:
+            activation_module = nn.LeakyReLU(0.2)
+
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 4, 2, 1, padding_mode="reflect", bias=False) if down 
-            else nn.ConvTranspose2d(in_channels, out_channels, 4, 2, 1, bias=False),
+            nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, padding_mode="reflect", bias=use_bias) if down 
+            else nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding, bias=use_bias),
             norm_layer(out_channels),
-            nn.ReLU() if activation == "relu" else nn.LeakyReLU(0.2), 
+            activation_module, 
         )
         
         self.use_dropout = use_dropout
@@ -162,25 +176,25 @@ class UnetGenerator(nn.Module):
             nn.LeakyReLU(0.2),
         ) # 128 x 128
         
-        self.down1 = GeneratorCNNBlock(features, features * 2, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 64 x 64
-        self.down2 = GeneratorCNNBlock(features * 2, features * 4, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 32 x 32
-        self.down3 = GeneratorCNNBlock(features * 4, features * 8, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 16 x 16
-        self.down4 = GeneratorCNNBlock(features * 8, features * 8, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 8 x 8
-        self.down5 = GeneratorCNNBlock(features * 8, features * 8, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 4 x 4
-        self.down6 = GeneratorCNNBlock(features * 8, features * 8, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 2 x 2
+        self.down1 = GeneratorCNNBlock(features, features * 2, kernel_size=4, stride=2, padding=1, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 64 x 64
+        self.down2 = GeneratorCNNBlock(features * 2, features * 4, kernel_size=4, stride=2, padding=1, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 32 x 32
+        self.down3 = GeneratorCNNBlock(features * 4, features * 8, kernel_size=4, stride=2, padding=1, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 16 x 16
+        self.down4 = GeneratorCNNBlock(features * 8, features * 8, kernel_size=4, stride=2, padding=1, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 8 x 8
+        self.down5 = GeneratorCNNBlock(features * 8, features * 8, kernel_size=4, stride=2, padding=1, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 4 x 4
+        self.down6 = GeneratorCNNBlock(features * 8, features * 8, kernel_size=4, stride=2, padding=1, down=True, activation="leaky", use_dropout=False, norm_layer=norm_layer) # 2 x 2
         
         self.bottleneck = nn.Sequential(
             nn.Conv2d(features * 8, features * 8, 4, 2, 1, padding_mode="reflect"), # 1 x 1
             nn.ReLU()
         )
         
-        self.up1 = GeneratorCNNBlock(features * 8, features * 8, down=False, activation="relu", use_dropout=True, norm_layer=norm_layer)
-        self.up2 = GeneratorCNNBlock(features * 8 * 2, features * 8, down=False, activation="relu", use_dropout=True, norm_layer=norm_layer)
-        self.up3 = GeneratorCNNBlock(features * 8 * 2, features * 8, down=False, activation="relu", use_dropout=True, norm_layer=norm_layer)
-        self.up4 = GeneratorCNNBlock(features * 8 * 2, features * 8, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
-        self.up5 = GeneratorCNNBlock(features * 8 * 2, features * 4, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
-        self.up6 = GeneratorCNNBlock(features * 4 * 2, features * 2, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
-        self.up7 = GeneratorCNNBlock(features * 2 * 2, features, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
+        self.up1 = GeneratorCNNBlock(features * 8, features * 8, kernel_size=4, stride=2, padding=1, down=False, activation="relu", use_dropout=True, norm_layer=norm_layer)
+        self.up2 = GeneratorCNNBlock(features * 8 * 2, features * 8, kernel_size=4, stride=2, padding=1, down=False, activation="relu", use_dropout=True, norm_layer=norm_layer)
+        self.up3 = GeneratorCNNBlock(features * 8 * 2, features * 8, kernel_size=4, stride=2, padding=1, down=False, activation="relu", use_dropout=True, norm_layer=norm_layer)
+        self.up4 = GeneratorCNNBlock(features * 8 * 2, features * 8, kernel_size=4, stride=2, padding=1, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
+        self.up5 = GeneratorCNNBlock(features * 8 * 2, features * 4, kernel_size=4, stride=2, padding=1, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
+        self.up6 = GeneratorCNNBlock(features * 4 * 2, features * 2, kernel_size=4, stride=2, padding=1, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
+        self.up7 = GeneratorCNNBlock(features * 2 * 2, features, kernel_size=4, stride=2, padding=1, down=False, activation="relu", use_dropout=False, norm_layer=norm_layer)
         
         self.final_up = nn.Sequential(
             nn.ConvTranspose2d(features * 2, in_channels, kernel_size=4, stride=2, padding=1),
