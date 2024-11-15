@@ -95,7 +95,7 @@ class PatchDiscriminator(nn.Module):
             
         layers = [
             nn.Sequential(
-                nn.Conv2d(in_channels * 2, features[0], kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
+                nn.Conv2d(in_channels, features[0], kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
                 nn.LeakyReLU(0.2),
             )
         ]
@@ -110,8 +110,7 @@ class PatchDiscriminator(nn.Module):
         
         self.model = nn.Sequential(*layers)
     
-    def forward(self, x, y):
-        input = torch.concat([x, y], dim=1)
+    def forward(self, input):
         return self.model(input)
 
 class GeneratorCNNBlock(nn.Module):
@@ -130,9 +129,10 @@ class GeneratorCNNBlock(nn.Module):
 
         super(GeneratorCNNBlock, self).__init__()
         
-        kernel_size = kwargs.get("kernel_size", 4)
-        stride =  kwargs.get("stride", 2)
-        padding = kwargs.get("padding", 1)
+        kernel_size    = kwargs.get("kernel_size", 4)
+        stride         = kwargs.get("stride", 2)
+        padding        = kwargs.get("padding", 1)
+        output_padding = kwargs.get("output_padding", 0)
         
         use_bias = True if norm_layer == nn.InstanceNorm2d else False
 
@@ -145,8 +145,24 @@ class GeneratorCNNBlock(nn.Module):
             activation_module = nn.LeakyReLU(0.2)
 
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, padding_mode="reflect", bias=use_bias) if down 
-            else nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding, bias=use_bias),
+            nn.Conv2d(
+                in_channels, 
+                out_channels, 
+                kernel_size, 
+                stride, 
+                padding, 
+                padding_mode="reflect", 
+                bias=use_bias
+            ) if down 
+            else nn.ConvTranspose2d(
+                in_channels, 
+                out_channels, 
+                kernel_size, 
+                stride, 
+                padding, 
+                bias=use_bias, 
+                output_padding=output_padding
+            ),
             norm_layer(out_channels),
             activation_module, 
         )
@@ -219,3 +235,86 @@ class UnetGenerator(nn.Module):
         x_ = self.up7(torch.concat([x1, x_], dim=1))
         x_ = self.final_up(torch.concat([x0, x_], dim=1))
         return x_ 
+
+class ResidualBlock(nn.Module):
+    """Defines a original Residual block"""
+
+    def __init__(self, channels, norm_layer=nn.InstanceNorm2d):
+        """Construct a Residual block
+        Parameters:
+            channels (int)            -- the number of channels in the input 
+            norm_layer (torch.nn)     -- normalization layer   
+        """
+        
+        super().__init__()
+
+        self.block = nn.Sequential(
+            GeneratorCNNBlock(channels, channels, activation="relu", kernel_size=3, padding=1, stride=1, norm_layer=norm_layer),
+            GeneratorCNNBlock(channels, channels, activation="identity", kernel_size=3, padding=1, stride=1, norm_layer=norm_layer)
+        )
+
+        # self.relu = nn.ReLU() see ResnetBlock in the https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/models/networks.py#L316 
+        
+
+    def forward(self, x):
+        return x + self.block(x)
+    
+class ResidualGenerator(nn.Module):
+    def __init__(self, img_channels=3, ndf=64, num_residuals=9, norm_layer=nn.InstanceNorm2d):
+        
+        super().__init__()
+
+        self.initial = nn.Sequential(
+            nn.Conv2d(img_channels, ndf, kernel_size=7, stride=1, padding=3, padding_mode="reflect"),
+            norm_layer(ndf),
+            nn.ReLU(inplace=True)
+        )
+
+        self.down_block = nn.Sequential(
+            GeneratorCNNBlock(ndf, ndf * 2, kernel_size=3, stride=2, padding=1, norm_layer=norm_layer),
+            GeneratorCNNBlock(ndf * 2, ndf * 4, kernel_size=3, stride=2, padding=1, norm_layer=norm_layer)
+        )
+
+        self.residuals_blocks = nn.Sequential(
+            *[ResidualBlock(ndf * 4) for _ in range(num_residuals)]
+        )
+
+        self.up_block = nn.Sequential(
+            GeneratorCNNBlock(
+                ndf * 4, 
+                ndf * 2, 
+                kernel_size=3, 
+                stride=2, 
+                padding=1, 
+                down=False, 
+                norm_layer=norm_layer, 
+                output_padding=1
+            ),
+            GeneratorCNNBlock(
+                ndf * 2, 
+                ndf, 
+                kernel_size=3, 
+                stride=2, 
+                padding=1, 
+                down=False, 
+                norm_layer=norm_layer, 
+                output_padding=1
+            )
+        )
+
+        self.final_block = nn.Conv2d(
+            ndf, 
+            img_channels, 
+            kernel_size=7, 
+            stride=1, 
+            padding=3, 
+            padding_mode="reflect"
+        )
+
+    def forward(self, x):
+        x = self.initial(x)
+        x = self.down_block(x)
+        x = self.residuals_blocks(x)
+        x = self.up_block(x)
+        x = self.final_block(x)
+        return x
