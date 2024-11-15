@@ -95,7 +95,7 @@ class PatchDiscriminator(nn.Module):
             
         layers = [
             nn.Sequential(
-                nn.Conv2d(in_channels * 2, features[0], kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
+                nn.Conv2d(in_channels, features[0], kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
                 nn.LeakyReLU(0.2),
             )
         ]
@@ -110,8 +110,7 @@ class PatchDiscriminator(nn.Module):
         
         self.model = nn.Sequential(*layers)
     
-    def forward(self, x, y):
-        input = torch.concat([x, y], dim=1)
+    def forward(self, input):
         return self.model(input)
 
 class GeneratorCNNBlock(nn.Module):
