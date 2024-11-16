@@ -9,7 +9,7 @@ from .networks import PatchDiscriminator, ResidualGenerator
 
 
 class CycleGAN(L.LightningModule):
-    def __init__(self, opt):
+    def __init__(self, opt=TrainOptions()):
         super().__init__()
 
         self.Dx = PatchDiscriminator(norm_layer=nn.InstanceNorm2d)
@@ -29,8 +29,8 @@ class CycleGAN(L.LightningModule):
         fake_x  = self.Gx(y)
         Dx_real = self.Dx(x)
         Dx_fake = self.Dx(fake_x)
-        Dx_real_loss = mse(Dx_real, torch.ones_like(Dx_real, device=self.opt.device))
-        Dx_fake_loss = mse(Dx_fake, torch.zeros_like(Dx_fake, device=self.opt.device))
+        Dx_real_loss = mse(Dx_real, torch.ones_like(Dx_real, device=self.device))
+        Dx_fake_loss = mse(Dx_fake, torch.zeros_like(Dx_fake, device=self.device))
 
         Dx_loss = Dx_real_loss + Dx_fake_loss
 
@@ -38,8 +38,8 @@ class CycleGAN(L.LightningModule):
         fake_y = self.Gy(x)
         Dy_real = self.Dy(y)
         Dy_fake = self.Dy(fake_y)
-        Dy_real_loss = mse(Dy_real, torch.ones_like(Dy_real, device=self.opt.device))
-        Dy_fake_loss = mse(Dy_fake, torch.zeros_like(Dy_fake, device=self.opt.device))
+        Dy_real_loss = mse(Dy_real, torch.ones_like(Dy_real, device=self.device))
+        Dy_fake_loss = mse(Dy_fake, torch.zeros_like(Dy_fake, device=self.device))
         Dy_loss = Dy_real_loss + Dy_fake_loss
         D_loss = (Dx_loss + Dy_loss) * 0.5
 
@@ -51,12 +51,12 @@ class CycleGAN(L.LightningModule):
         # Train Generator Gx from Dx
         fake_x = self.Gx(y)
         Dx_fake_g = self.Dx(fake_x)
-        Gx_error = mse(Dx_fake_g, torch.ones_like(Dx_fake_g, device=self.opt.device))
+        Gx_error = mse(Dx_fake_g, torch.ones_like(Dx_fake_g, device=self.device))
 
         # Train Generator Gy from Dy
         fake_y = self.Gy(x)
         Dy_fake_g = self.Dy(fake_y)
-        Gy_error = mse(Dy_fake_g, torch.ones_like(Dy_fake_g, device=self.opt.device))
+        Gy_error = mse(Dy_fake_g, torch.ones_like(Dy_fake_g, device=self.device))
 
         # Cycle consistency loss
         cycle_loss = ( l1(self.Gy(self.Gx(y)), y) + l1(self.Gx(self.Gy(x)), x) ) * self.opt.cycle_lambda
@@ -78,7 +78,14 @@ class CycleGAN(L.LightningModule):
         tensorboard = self.logger.experiment
         y2x_pair = torch.concat([y, self.Gx(y)], dim=0)
         x2y_pair = torch.concat([x, self.Gy(x)], dim=0)
-        final_example = denorm_tensor(torch.concat([y2x_pair, x2y_pair], dim=0), [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        
+        final_example = denorm_tensor(
+            torch.concat([y2x_pair, x2y_pair], dim=0), 
+            [0.5, 0.5, 0.5], 
+            [0.5, 0.5, 0.5],
+            self.device
+        )
+        
         tensorboard.add_images(
             "generated_images: |y|x_hat|x|y_hat|",
             final_example,
