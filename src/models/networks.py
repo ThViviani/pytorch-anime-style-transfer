@@ -49,6 +49,8 @@ def define_generator(input_nc, ndf, generator_type="unet", norm_layer=nn.BatchNo
     net = None
     if generator_type == "unet":
         net = UnetGenerator(input_nc, ndf, norm_layer=norm_layer)
+    elif generator_type == "residual":
+        net = ResidualGenerator()
     
     net.apply(weights_init)
     return net

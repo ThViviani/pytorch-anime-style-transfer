@@ -34,13 +34,13 @@ class ConditionalGAN(L.LightningModule):
 
         # forward pass with real batch
         d_output_real = self.discriminator(torch.concat([x, y], dim=1))
-        real_labels = torch.ones_like(d_output_real).cuda()
+        real_labels = torch.ones_like(d_output_real, device=self.device)
         d_real_error = bce(d_output_real, real_labels)
 
         # forward pass with fake images
         fake_images = self.generator(x)
         d_output_fake = self.discriminator(torch.concat([x, fake_images], dim=1))
-        fake_labels = torch.zeros_like(d_output_fake).cuda()
+        fake_labels = torch.zeros_like(d_output_fake, device=self.device)
         d_fake_error = bce(d_output_fake, fake_labels)
 
         # update discriminator
@@ -53,7 +53,7 @@ class ConditionalGAN(L.LightningModule):
 
         fake_images = self.generator(x)
         d_output_fake = self.discriminator(torch.concat([x, fake_images], dim=1))
-        real_labels = torch.ones_like(d_output_fake).cuda()
+        real_labels = torch.ones_like(d_output_fake, device=self.device)
         g_error = bce(d_output_fake, real_labels)
 
         l1_error = F.l1_loss(fake_images, y) * self.opt.l1_lambda
