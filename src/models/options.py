@@ -1,7 +1,7 @@
 class TrainOptions:
     """Defines a train option for models"""
 
-    def __init__(self, device, lr=2e-4, l1_lambda=100, betas=(0.5, 0.999), cycle_lambda=10, identity_lambda=0):
+    def __init__(self, lr=2e-4, l1_lambda=100, betas=(0.5, 0.999), cycle_lambda=10, identity_lambda=0):
         """Construct a train option.
         Parameters:
             lr (float)                  -- the learning rate for optimization solver
