@@ -67,9 +67,30 @@ class ConditionalGAN(L.LightningModule):
         self.log_dict(history, prog_bar=True)
 
         # saved generated images
+        if batch_idx == torch.randint(0, len(self.trainer.train_dataloader()) - 1, (1,)).item():
+            tensorboard = self.logger.experiment
+            tensorboard.add_images(
+                "train_generated_images", 
+                denorm_tensor(
+                    torch.concat([self.generator(x), y], dim=0), 
+                    [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
+                    self.device
+                ),
+                self.current_epoch
+            )
+        
+        return history
+    
+    def on_validation_epoch_end(self):
+        val_dataloader = self.trainer.val_dataloader()
+
+        random_batch_idx = torch.randint(0, len(val_dataloader) - 1, (1,)).item()
+        random_batch = val_dataloader[random_batch_idx]
+        
+        x, y = random_batch 
         tensorboard = self.logger.experiment
         tensorboard.add_images(
-            "generated_images", 
+            "val_generated_images", 
             denorm_tensor(
                 torch.concat([self.generator(x), y], dim=0), 
                 [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
@@ -77,8 +98,6 @@ class ConditionalGAN(L.LightningModule):
             ),
             self.current_epoch
         )
-        
-        return history
 
     def configure_optimizers(self):
         discriminator_optimizer = torch.optim.Adam(
