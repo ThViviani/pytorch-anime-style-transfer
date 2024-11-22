@@ -3,10 +3,11 @@ import torch.nn as nn
 import lightning as L
 import torch.nn.functional as F
 
+from torch.amp import autocast
 from ..data.utils import denorm_tensor
 
 
-class ConditionalGAN(L.LightningModule):
+class ConditionalGAN_hat(L.LightningModule):
     """Defines a Conditional GAN"""
 
     def __init__(self, discriminator=None, generator=None, opt=None):
@@ -67,7 +68,14 @@ class ConditionalGAN(L.LightningModule):
         self.log_dict(history, prog_bar=True)
 
         # saved generated images
-        if batch_idx == torch.randint(0, len(self.trainer.train_dataloader().dataset) - 1, (1,)).item():
+        if batch_idx == len(self.trainer.datamodule.train_dataloader()) - 1:
+            val_dataloader = self.trainer.datamodule.val_dataloader()
+            x_val, y_val = next(iter(val_dataloader))
+            x_val = x_val.to(self.device)
+            y_val = y_val.to(self.device)
+            with autocast(device_type=self.device.type):
+              val_image = torch.concat([self.generator(x_val), y_val], dim=0)
+
             tensorboard = self.logger.experiment
             tensorboard.add_images(
                 "train_generated_images", 
@@ -78,27 +86,18 @@ class ConditionalGAN(L.LightningModule):
                 ),
                 self.current_epoch
             )
+            tensorboard.add_images(
+                "val_generated_images", 
+                denorm_tensor(
+                    val_image, 
+                    [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
+                    self.device
+                ),
+                self.current_epoch
+            )
         
         return history
     
-    def on_validation_epoch_end(self):
-        val_dataloader = self.trainer.val_dataloader().dataset
-
-        random_batch_idx = torch.randint(0, len(val_dataloader) - 1, (1,)).item()
-        random_batch = val_dataloader[random_batch_idx]
-        
-        x, y = random_batch 
-        tensorboard = self.logger.experiment
-        tensorboard.add_images(
-            "val_generated_images", 
-            denorm_tensor(
-                torch.concat([self.generator(x), y], dim=0), 
-                [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
-                self.device
-            ),
-            self.current_epoch
-        )
-
     def configure_optimizers(self):
         discriminator_optimizer = torch.optim.Adam(
             self.discriminator.parameters(), 
