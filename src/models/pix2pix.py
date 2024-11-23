@@ -7,7 +7,7 @@ from torch.amp import autocast
 from ..data.utils import denorm_tensor
 
 
-class ConditionalGAN_hat(L.LightningModule):
+class ConditionalGAN(L.LightningModule):
     """Defines a Conditional GAN"""
 
     def __init__(self, discriminator=None, generator=None, opt=None):
