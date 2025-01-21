@@ -108,7 +108,7 @@ class CycleGAN(L.LightningModule):
                 
                 y2x_pair_val = torch.concat([y_val, self.Gx(y_val)], dim=0)
                 x2y_pair_val = torch.concat([x_val, self.Gy(x_val)], dim=0)
-                val_image = torch.concat([y2x_pair_val, x2y_pair_val], dim=0), 
+                val_image = torch.concat([y2x_pair_val, x2y_pair_val], dim=0) 
 
             tensorboard = self.logger.experiment
             
