@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from ..data.utils import denorm_tensor
 from .options import TrainOptions
 from .networks import PatchDiscriminator, ResidualGenerator 
+from torch.amp import autocast
 
 
 class CycleGAN(L.LightningModule):
@@ -19,7 +20,7 @@ class CycleGAN(L.LightningModule):
         self.opt = opt
         self.automatic_optimization = False
 
-    def training_step(self, batch, batch_inx):
+    def training_step(self, batch, batch_idx):
         x, y = batch
         d_optimizer, g_optimizer = self.optimizers()
         l1  = nn.L1Loss()
@@ -74,23 +75,62 @@ class CycleGAN(L.LightningModule):
         history = {'loss_d': D_loss.item(), 'loss_g': g_final_loss.item()}
         self.log_dict(history, prog_bar=True)
 
+        # # saved generated images
+        # tensorboard = self.logger.experiment
+        # y2x_pair = torch.concat([y, self.Gx(y)], dim=0)
+        # x2y_pair = torch.concat([x, self.Gy(x)], dim=0)
+        
+        # final_example = denorm_tensor(
+        #     torch.concat([y2x_pair, x2y_pair], dim=0), 
+        #     [0.5, 0.5, 0.5], 
+        #     [0.5, 0.5, 0.5],
+        #     self.device
+        # )
+        
+        # tensorboard.add_images(
+        #     "generated_images: |y|x_hat|x|y_hat|",
+        #     final_example,
+        #     self.current_epoch
+        # )
+
         # saved generated images
-        tensorboard = self.logger.experiment
-        y2x_pair = torch.concat([y, self.Gx(y)], dim=0)
-        x2y_pair = torch.concat([x, self.Gy(x)], dim=0)
-        
-        final_example = denorm_tensor(
-            torch.concat([y2x_pair, x2y_pair], dim=0), 
-            [0.5, 0.5, 0.5], 
-            [0.5, 0.5, 0.5],
-            self.device
-        )
-        
-        tensorboard.add_images(
-            "generated_images: |y|x_hat|x|y_hat|",
-            final_example,
-            self.current_epoch
-        )
+        if batch_idx == len(self.trainer.datamodule.train_dataloader()) - 1:
+            val_dataloader = self.trainer.datamodule.val_dataloader()
+            
+            x_val, y_val = next(iter(val_dataloader))
+            x_val = x_val.to(self.device)
+            y_val = y_val.to(self.device)
+            
+            with autocast(device_type=self.device.type):
+                y2x_pair = torch.concat([y, self.Gx(y)], dim=0)
+                x2y_pair = torch.concat([x, self.Gy(x)], dim=0)
+                train_image = torch.concat([y2x_pair, x2y_pair], dim=0)
+                
+                y2x_pair_val = torch.concat([y_val, self.Gx(y_val)], dim=0)
+                x2y_pair_val = torch.concat([x_val, self.Gy(x_val)], dim=0)
+                val_image = torch.concat([y2x_pair_val, x2y_pair_val], dim=0), 
+
+            tensorboard = self.logger.experiment
+            
+            tensorboard.add_images(
+                "train_generated_images: |y|x_hat|x|y_hat|", 
+                denorm_tensor(
+                    train_image, 
+                    [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
+                    self.device
+                ),
+                self.current_epoch
+            )
+            
+            tensorboard.add_images(
+                "val_generated_images: |y|x_hat|x|y_hat|", 
+                denorm_tensor(
+                    val_image, 
+                    [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
+                    self.device
+                ),
+                self.current_epoch
+            )
 
         return history
 
