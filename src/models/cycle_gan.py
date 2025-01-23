@@ -103,8 +103,8 @@ class CycleGAN(L.LightningModule):
             y_val = y_val.to(self.device)
             
             with autocast(device_type=self.device.type):
-                y2x_pair = torch.concat([y, self.Gx(y)], dim=0)
-                x2y_pair = torch.concat([x, self.Gy(x)], dim=0)
+                y2x_pair = torch.concat([y, self.Gx(y)], dim=0, device=self.device)
+                x2y_pair = torch.concat([x, self.Gy(x)], dim=0, device=self.device)
                 train_image = torch.concat([y2x_pair, x2y_pair], dim=0)
                 
                 y2x_pair_val = torch.concat([y_val, self.Gx(y_val)], dim=0)
@@ -113,15 +113,15 @@ class CycleGAN(L.LightningModule):
 
             tensorboard = self.logger.experiment
             
-            # tensorboard.add_images(
-            #     "train_generated_images: |y|x_hat|x|y_hat|", 
-            #     denorm_tensor(
-            #         train_image, 
-            #         [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
-            #         self.device
-            #     ),
-            #     self.current_epoch
-            # )
+            tensorboard.add_images(
+                "train_generated_images: |y|x_hat|x|y_hat|", 
+                denorm_tensor(
+                    train_image, 
+                    [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
+                    self.device
+                ),
+                self.current_epoch
+            )
             
             # tensorboard.add_images(
             #     "val_generated_images: |y|x_hat|x|y_hat|", 
