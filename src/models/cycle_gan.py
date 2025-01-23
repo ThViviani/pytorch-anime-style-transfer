@@ -75,24 +75,6 @@ class CycleGAN(L.LightningModule):
         history = {'loss_d': D_loss.item(), 'loss_g': g_final_loss.item()}
         self.log_dict(history, prog_bar=True)
 
-        # # saved generated images
-        # tensorboard = self.logger.experiment
-        # y2x_pair = torch.concat([y, self.Gx(y)], dim=0)
-        # x2y_pair = torch.concat([x, self.Gy(x)], dim=0)
-        
-        # final_example = denorm_tensor(
-        #     torch.concat([y2x_pair, x2y_pair], dim=0), 
-        #     [0.5, 0.5, 0.5], 
-        #     [0.5, 0.5, 0.5],
-        #     self.device
-        # )
-        
-        # tensorboard.add_images(
-        #     "generated_images: |y|x_hat|x|y_hat|",
-        #     final_example,
-        #     self.current_epoch
-        # )
-
         # saved generated images
         # if batch_idx == len(self.trainer.datamodule.train_dataloader()) - 1:
         if batch_idx == 0:
@@ -113,25 +95,25 @@ class CycleGAN(L.LightningModule):
 
             tensorboard = self.logger.experiment
             
-            # tensorboard.add_images(
-            #     "train_generated_images: |y|x_hat|x|y_hat|", 
-            #     denorm_tensor(
-            #         train_image, 
-            #         [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
-            #         self.device
-            #     ),
-            #     self.current_epoch
-            # )
+            tensorboard.add_images(
+                "train_generated_images: |y|x_hat|x|y_hat|", 
+                denorm_tensor(
+                    train_image, 
+                    [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
+                    self.device
+                ),
+                self.current_epoch
+            )
             
-            # tensorboard.add_images(
-            #     "val_generated_images: |y|x_hat|x|y_hat|", 
-            #     denorm_tensor(
-            #         val_image, 
-            #         [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
-            #         self.device
-            #     ),
-            #     self.current_epoch
-            # )
+            tensorboard.add_images(
+                "val_generated_images: |y|x_hat|x|y_hat|", 
+                denorm_tensor(
+                    val_image, 
+                    [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
+                    self.device
+                ),
+                self.current_epoch
+            )
 
         return history
 
