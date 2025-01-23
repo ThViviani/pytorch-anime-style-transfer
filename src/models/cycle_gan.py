@@ -76,8 +76,8 @@ class CycleGAN(L.LightningModule):
         self.log_dict(history, prog_bar=True)
 
         # saved generated images
-        # if batch_idx == len(self.trainer.datamodule.train_dataloader()) - 1:
-        if batch_idx == 0:
+        if batch_idx == len(self.trainer.datamodule.train_dataloader()) - 1:
+        # if batch_idx == 0:
             val_dataloader = self.trainer.datamodule.val_dataloader()
             
             x_val, y_val = next(iter(val_dataloader))
@@ -95,25 +95,25 @@ class CycleGAN(L.LightningModule):
 
             tensorboard = self.logger.experiment
             
-            tensorboard.add_images(
-                "train_generated_images: |y|x_hat|x|y_hat|", 
-                denorm_tensor(
-                    train_image, 
-                    [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
-                    self.device
-                ),
-                self.current_epoch
-            )
+            # tensorboard.add_images(
+            #     "train_generated_images: |y|x_hat|x|y_hat|", 
+            #     denorm_tensor(
+            #         train_image, 
+            #         [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
+            #         self.device
+            #     ),
+            #     self.current_epoch
+            # )
             
-            tensorboard.add_images(
-                "val_generated_images: |y|x_hat|x|y_hat|", 
-                denorm_tensor(
-                    val_image, 
-                    [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
-                    self.device
-                ),
-                self.current_epoch
-            )
+            # tensorboard.add_images(
+            #     "val_generated_images: |y|x_hat|x|y_hat|", 
+            #     denorm_tensor(
+            #         val_image, 
+            #         [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
+            #         self.device
+            #     ),
+            #     self.current_epoch
+            # )
 
         return history
 
