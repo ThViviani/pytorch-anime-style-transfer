@@ -103,8 +103,8 @@ class CycleGAN(L.LightningModule):
             y_val = y_val.to(self.device)
             
             with autocast(device_type=self.device.type):
-                y2x_pair = torch.concat([y, self.Gx(y)], dim=0, device=self.device)
-                x2y_pair = torch.concat([x, self.Gy(x)], dim=0, device=self.device)
+                y2x_pair = torch.concat([y, self.Gx(y)], dim=0).to(self.device)
+                x2y_pair = torch.concat([x, self.Gy(x)], dim=0).to(self.device)
                 train_image = torch.concat([y2x_pair, x2y_pair], dim=0)
                 
                 y2x_pair_val = torch.concat([y_val, self.Gx(y_val)], dim=0)
