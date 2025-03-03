@@ -105,8 +105,7 @@ class CycleGAN(L.LightningModule):
                 "train_generated_images: |y|x_hat|x|y_hat|": [ 
                     wandb.Image( denorm_tensor(train_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device) ) 
                 ]
-            }, 
-            step=self.current_epoch
+            }
         )
 
         wandb_logger.log(
@@ -114,8 +113,7 @@ class CycleGAN(L.LightningModule):
                 "val_generated_images: |y|x_hat|x|y_hat|": [ 
                     wandb.Image( denorm_tensor(val_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device) ) 
                 ]
-            }, 
-            step=self.current_epoch
+            }
         )
 
     def configure_optimizers(self):
