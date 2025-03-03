@@ -92,26 +92,22 @@ class CycleGAN(L.LightningModule):
                 x2y_pair_val = torch.concat([x_val, self.Gy(x_val)], dim=0)
                 val_image = torch.concat([y2x_pair_val, x2y_pair_val], dim=0) 
 
-            tensorboard = self.logger.experiment
+            wandb_logger = self.logger.experiment
             
-            tensorboard.add_images(
-                "train_generated_images: |y|x_hat|x|y_hat|", 
-                denorm_tensor(
-                    train_image, 
-                    [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
-                    self.device
-                ),
-                self.current_epoch
+            wandb_logger.log_image(
+                key="train_generated_images: |y|x_hat|x|y_hat|", 
+                images=[
+                    denorm_tensor(train_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device),
+                ],
+                step=self.current_epoch
             )
-            
-            tensorboard.add_images(
-                "val_generated_images: |y|x_hat|x|y_hat|", 
-                denorm_tensor(
-                    val_image, 
-                    [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], 
-                    self.device
-                ),
-                self.current_epoch
+
+            wandb_logger.log_image(
+                key="val_generated_images: |y|x_hat|x|y_hat|",
+                images=[
+                    denorm_tensor(val_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device),
+                ],
+                step=self.current_epoch 
             )
 
         return history
