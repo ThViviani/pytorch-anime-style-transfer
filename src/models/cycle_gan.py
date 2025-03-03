@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import lightning as L
 import torch.nn.functional as F
+import wandb
 
 from ..data.utils import denorm_tensor
 from .options import TrainOptions
@@ -76,7 +77,8 @@ class CycleGAN(L.LightningModule):
         self.log_dict(history, prog_bar=True)
 
         # saved generated images
-        if batch_idx == len(self.trainer.datamodule.train_dataloader()) - 1:
+        # if batch_idx == len(self.trainer.datamodule.train_dataloader()) - 1:
+        if batch_idx == 0:
             val_dataloader = self.trainer.datamodule.val_dataloader()
             
             x_val, y_val = next(iter(val_dataloader))
@@ -94,20 +96,22 @@ class CycleGAN(L.LightningModule):
 
             wandb_logger = self.logger.experiment
             
-            wandb_logger.log_image(
-                key="train_generated_images: |y|x_hat|x|y_hat|", 
-                images=[
-                    denorm_tensor(train_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device),
-                ],
+            wandb_logger.log(
+                {
+                    "train_generated_images: |y|x_hat|x|y_hat|": [ 
+                        wandb.Image( denorm_tensor(train_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device) ) 
+                    ]
+                }, 
                 step=self.current_epoch
             )
 
-            wandb_logger.log_image(
-                key="val_generated_images: |y|x_hat|x|y_hat|",
-                images=[
-                    denorm_tensor(val_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device),
-                ],
-                step=self.current_epoch 
+            wandb_logger.log(
+                {
+                    "val_generated_images: |y|x_hat|x|y_hat|": [ 
+                        wandb.Image( denorm_tensor(val_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device) ) 
+                    ]
+                }, 
+                step=self.current_epoch
             )
 
         return history
