@@ -77,8 +77,7 @@ class CycleGAN(L.LightningModule):
         self.log_dict(history, prog_bar=True)
 
         # saved generated images
-        # if batch_idx == len(self.trainer.datamodule.train_dataloader()) - 1:
-        if batch_idx == 0:
+        if batch_idx == len(self.trainer.datamodule.train_dataloader()) - 1:
             val_dataloader = self.trainer.datamodule.val_dataloader()
             
             x_val, y_val = next(iter(val_dataloader))
