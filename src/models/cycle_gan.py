@@ -78,43 +78,45 @@ class CycleGAN(L.LightningModule):
 
         # saved generated images
         if batch_idx == len(self.trainer.datamodule.train_dataloader()) - 1:
-            val_dataloader = self.trainer.datamodule.val_dataloader()
-            
-            x_val, y_val = next(iter(val_dataloader))
-            x_val = x_val.to(self.device)
-            y_val = y_val.to(self.device)
-            
-            with autocast(device_type=self.device.type):
-                y2x_pair = torch.concat([y, self.Gx(y)], dim=0).to(self.device)
-                x2y_pair = torch.concat([x, self.Gy(x)], dim=0).to(self.device)
-                train_image = torch.concat([y2x_pair, x2y_pair], dim=0)
-                
-                y2x_pair_val = torch.concat([y_val, self.Gx(y_val)], dim=0)
-                x2y_pair_val = torch.concat([x_val, self.Gy(x_val)], dim=0)
-                val_image = torch.concat([y2x_pair_val, x2y_pair_val], dim=0) 
-
-            wandb_logger = self.logger.experiment
-            
-            wandb_logger.log(
-                {
-                    "train_generated_images: |y|x_hat|x|y_hat|": [ 
-                        wandb.Image( denorm_tensor(train_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device) ) 
-                    ]
-                }, 
-                step=self.current_epoch
-            )
-
-            wandb_logger.log(
-                {
-                    "val_generated_images: |y|x_hat|x|y_hat|": [ 
-                        wandb.Image( denorm_tensor(val_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device) ) 
-                    ]
-                }, 
-                step=self.current_epoch
-            )
-
+            self.log_generated_images(batch)    
         return history
 
+    def log_generated_images(self, train_batch):
+        x, y = train_batch
+
+        val_iter = iter(self.trainer.datamodule.val_dataloader())    
+        x_val, y_val = next(val_iter)
+        x_val = x_val.to(self.device)
+        y_val = y_val.to(self.device)
+            
+        with autocast(device_type=self.device.type):
+            y2x_pair = torch.concat([y, self.Gx(y)], dim=0).to(self.device)
+            x2y_pair = torch.concat([x, self.Gy(x)], dim=0).to(self.device)
+            train_image = torch.concat([y2x_pair, x2y_pair], dim=0)
+            
+            y2x_pair_val = torch.concat([y_val, self.Gx(y_val)], dim=0)
+            x2y_pair_val = torch.concat([x_val, self.Gy(x_val)], dim=0)
+            val_image = torch.concat([y2x_pair_val, x2y_pair_val], dim=0) 
+
+        wandb_logger = self.logger.experiment
+        
+        wandb_logger.log(
+            {
+                "train_generated_images: |y|x_hat|x|y_hat|": [ 
+                    wandb.Image( denorm_tensor(train_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device) ) 
+                ]
+            }, 
+            step=self.current_epoch
+        )
+
+        wandb_logger.log(
+            {
+                "val_generated_images: |y|x_hat|x|y_hat|": [ 
+                    wandb.Image( denorm_tensor(val_image, [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], self.device) ) 
+                ]
+            }, 
+            step=self.current_epoch
+        )
 
     def configure_optimizers(self):
         optim_d = torch.optim.Adam(
