@@ -6,3 +6,4 @@ lightning==2.5.0.post0
 python-dotenv==1.0.1
 setuptools==70.0.0
 torch==2.4.0
+wandb==0.18.3
