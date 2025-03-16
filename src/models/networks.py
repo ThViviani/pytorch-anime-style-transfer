@@ -135,6 +135,7 @@ class GeneratorCNNBlock(nn.Module):
         stride         = kwargs.get("stride", 2)
         padding        = kwargs.get("padding", 1)
         output_padding = kwargs.get("output_padding", 0)
+        padding_mode   = kwargs.get("padding_mode", "reflect")
         
         use_bias = True if norm_layer == nn.InstanceNorm2d else False
 
@@ -153,7 +154,7 @@ class GeneratorCNNBlock(nn.Module):
                 kernel_size, 
                 stride, 
                 padding, 
-                padding_mode="reflect", 
+                padding_mode=padding_mode, 
                 bias=use_bias
             ) if down 
             else nn.ConvTranspose2d(
@@ -273,8 +274,8 @@ class ResidualGenerator(nn.Module):
         )
 
         self.down_block = nn.Sequential(
-            GeneratorCNNBlock(ndf, ndf * 2, kernel_size=3, stride=2, padding=1, norm_layer=norm_layer),
-            GeneratorCNNBlock(ndf * 2, ndf * 4, kernel_size=3, stride=2, padding=1, norm_layer=norm_layer)
+            GeneratorCNNBlock(ndf, ndf * 2, kernel_size=3, stride=2, padding=1, norm_layer=norm_layer, padding_mode='zeros'),
+            GeneratorCNNBlock(ndf * 2, ndf * 4, kernel_size=3, stride=2, padding=1, norm_layer=norm_layer, padding_mode='zeros')
         )
 
         self.residuals_blocks = nn.Sequential(
@@ -304,13 +305,9 @@ class ResidualGenerator(nn.Module):
             )
         )
 
-        self.final_block = nn.Conv2d(
-            ndf, 
-            img_channels, 
-            kernel_size=7, 
-            stride=1, 
-            padding=3, 
-            padding_mode="reflect"
+        self.final_block = nn.Sequential(
+            nn.Conv2d(ndf, img_channels, kernel_size=7, stride=1, padding=3, padding_mode="reflect"),
+            nn.Tanh(),
         )
 
     def forward(self, x):
