@@ -3,6 +3,7 @@ import torch.nn as nn
 import lightning as L
 import torch.nn.functional as F
 import wandb
+import itertools
 
 from ..data.utils import denorm_tensor
 from .options import TrainOptions
@@ -118,13 +119,13 @@ class CycleGAN(L.LightningModule):
 
     def configure_optimizers(self):
         optim_d = torch.optim.Adam(
-            list(self.Dx.parameters()) + list(self.Dy.parameters()),
+            itertools.chain(self.Dx.parameters(), self.Dy.parameters()),
             lr=self.opt.lr,
             betas=self.opt.betas
         )
 
         optim_g = torch.optim.Adam(
-            list(self.Gx.parameters()) + list(self.Gy.parameters()),
+            itertools.chain(self.Gx.parameters(), self.Gy.parameters()),
             lr=self.opt.lr,
             betas=self.opt.betas
         )
