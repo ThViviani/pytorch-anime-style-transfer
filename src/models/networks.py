@@ -58,7 +58,7 @@ def define_generator(input_nc, ndf, generator_type="unet", norm_layer=nn.BatchNo
 class DiscriminatorCNNBlock(nn.Module):
     """Defines a discriminator CNN block"""
 
-    def __init__(self, in_channels, out_channels, norm_layer, stride=2):
+    def __init__(self, in_channels, out_channels, norm_layer, stride=2, padding_mode="reflect"):
         """Construct a convolutional block.
         Parameters:
             in_channels (int)  -- the number of channels in the input 
@@ -70,9 +70,9 @@ class DiscriminatorCNNBlock(nn.Module):
         super(DiscriminatorCNNBlock, self).__init__()
         
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 4, stride, padding_mode="reflect", padding=1),
+            nn.Conv2d(in_channels, out_channels, 4, stride, padding_mode=padding_mode, padding=1),
             norm_layer(out_channels),
-            nn.LeakyReLU(0.2),
+            nn.LeakyReLU(0.2, inplace=True),
         )
         
     def forward(self, x):
@@ -81,7 +81,7 @@ class DiscriminatorCNNBlock(nn.Module):
 class PatchDiscriminator(nn.Module):
     """Defines a PatchGAN discriminator"""
 
-    def __init__(self, in_channels=3, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d): # 256 x 256 -> 70x70 receptive field
+    def __init__(self, in_channels=3, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, padding_mode="reflect"): # 256 x 256 -> 70x70 receptive field
         """Construct a PatchGAN discriminator
         
         Parameters:
@@ -97,18 +97,17 @@ class PatchDiscriminator(nn.Module):
             
         layers = [
             nn.Sequential(
-                nn.Conv2d(in_channels, features[0], kernel_size=4, stride=2, padding=1, padding_mode="reflect"),
-                nn.LeakyReLU(0.2),
+                nn.Conv2d(in_channels, features[0], kernel_size=4, stride=2, padding=1, padding_mode=padding_mode),
+                nn.LeakyReLU(0.2, inplace=True),
             )
         ]
 
         in_channel = features[0]
         for out_channel in features[1:]:
-            layers += [DiscriminatorCNNBlock(in_channel, out_channel, norm_layer, stride=1 if out_channel == features[-1] else 2)]
+            layers += [DiscriminatorCNNBlock(in_channel, out_channel, norm_layer, stride=1 if out_channel == features[-1] else 2, padding_mode=padding_mode), ]
             in_channel = out_channel
         
-        layers += [DiscriminatorCNNBlock(in_channel, 1, norm_layer, stride=1)]
-        # layers += [nn.Sigmoid()]
+        layers += [nn.Conv2d(512, 1, kernel_size=(4, 4), stride=(1, 1), padding=(1, 1))]
         
         self.model = nn.Sequential(*layers)
     
@@ -252,7 +251,7 @@ class ResidualBlock(nn.Module):
         super().__init__()
 
         self.block = nn.Sequential(
-            GeneratorCNNBlock(channels, channels, activation="relu", kernel_size=3, padding=1, stride=1, norm_layer=norm_layer),
+            GeneratorCNNBlock(channels, channels, activation="relu", use_dropout=True, kernel_size=3, padding=1, stride=1, norm_layer=norm_layer),
             GeneratorCNNBlock(channels, channels, activation="identity", kernel_size=3, padding=1, stride=1, norm_layer=norm_layer)
         )
 

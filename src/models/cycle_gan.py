@@ -14,8 +14,8 @@ class CycleGAN(L.LightningModule):
     def __init__(self, opt=TrainOptions()):
         super().__init__()
 
-        self.Dx = PatchDiscriminator(norm_layer=nn.InstanceNorm2d)
-        self.Dy = PatchDiscriminator(norm_layer=nn.InstanceNorm2d)
+        self.Dx = PatchDiscriminator(norm_layer=nn.InstanceNorm2d, padding_mode='zeros')
+        self.Dy = PatchDiscriminator(norm_layer=nn.InstanceNorm2d, padding_mode='zeros')
         self.Gx = ResidualGenerator()
         self.Gy = ResidualGenerator()
         self.opt = opt
