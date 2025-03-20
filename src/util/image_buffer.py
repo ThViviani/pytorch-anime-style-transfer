@@ -46,7 +46,7 @@ class ImageBuffer():
         
         return_buffer = []
         for image in new_images:
-            image = torch.unsqueeze(image.data, 0)
+            image = torch.unsqueeze(image, 0)
             if self.num_images < self.buffer_size:
                 self.num_images += 1
                 self.images.append(image)
