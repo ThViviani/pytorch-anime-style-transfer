@@ -51,7 +51,7 @@ class CycleGAN(L.LightningModule):
 
         # Update discriminators
         d_optimizer.zero_grad()
-        self.manual_backward(D_loss)
+        self.manual_backward(D_loss, retain_graph=True)
         d_optimizer.step()
 
         # Train Generator Gx from Dx
