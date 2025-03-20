@@ -7,8 +7,9 @@ import itertools
 
 from ..data.utils import denorm_tensor
 from .options import TrainOptions
-from .networks import PatchDiscriminator, ResidualGenerator 
+from .networks import PatchDiscriminator, ResidualGenerator
 from torch.amp import autocast
+from ..util.image_buffer import ImageBuffer
 
 
 class CycleGAN(L.LightningModule):
@@ -21,6 +22,8 @@ class CycleGAN(L.LightningModule):
         self.Gy = ResidualGenerator()
         self.opt = opt
         self.automatic_optimization = False
+        self.fake_x_buffer = ImageBuffer(self.opt.buffer_size)
+        self.fake_y_buffer = ImageBuffer(self.opt.buffer_size)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -31,7 +34,7 @@ class CycleGAN(L.LightningModule):
         # Train Discriminator Dx
         fake_x  = self.Gx(y)
         Dx_real = self.Dx(x)
-        Dx_fake = self.Dx(fake_x)
+        Dx_fake = self.Dx(self.fake_x_buffer.pop(fake_x))
         Dx_real_loss = mse(Dx_real, torch.ones_like(Dx_real, device=self.device))
         Dx_fake_loss = mse(Dx_fake, torch.zeros_like(Dx_fake, device=self.device))
 
@@ -40,7 +43,7 @@ class CycleGAN(L.LightningModule):
         # Train Discriminator Dy
         fake_y = self.Gy(x)
         Dy_real = self.Dy(y)
-        Dy_fake = self.Dy(fake_y)
+        Dy_fake = self.Dy(self.fake_y_buffer.pop(fake_y))
         Dy_real_loss = mse(Dy_real, torch.ones_like(Dy_real, device=self.device))
         Dy_fake_loss = mse(Dy_fake, torch.zeros_like(Dy_fake, device=self.device))
         Dy_loss = Dy_real_loss + Dy_fake_loss
