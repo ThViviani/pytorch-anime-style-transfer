@@ -46,13 +46,12 @@ class ImageBuffer():
         
         return_buffer = []
         for image in new_images:
-            image = torch.unsqueeze(image, 0)
+            image = torch.unsqueeze(image.data, 0)
             if self.num_images < self.buffer_size:
                 self.num_images += 1
                 self.images.append(image)
                 return_buffer.append(image)
             else:
-                print("I'm full!")
                 p = random.uniform(0, 1)
                 if p > 0.5:  # by 50% chance, the buffer will return a previously stored image, and insert the current image into the buffer
                     random_id = random.randint(0, self.buffer_size - 1)
@@ -63,3 +62,4 @@ class ImageBuffer():
                     return_buffer.append(image)
         return_buffer = torch.cat(return_buffer, 0)
         return return_buffer
+

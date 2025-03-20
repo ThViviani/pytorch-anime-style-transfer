@@ -34,7 +34,7 @@ class CycleGAN(L.LightningModule):
         # Train Discriminator Dx
         fake_x  = self.Gx(y)
         Dx_real = self.Dx(x)
-        Dx_fake = self.Dx(self.fake_x_buffer.pop(fake_x))
+        Dx_fake = self.Dx(self.fake_x_buffer.pop(fake_x).detach())
         Dx_real_loss = mse(Dx_real, torch.ones_like(Dx_real, device=self.device))
         Dx_fake_loss = mse(Dx_fake, torch.zeros_like(Dx_fake, device=self.device))
 
@@ -43,7 +43,7 @@ class CycleGAN(L.LightningModule):
         # Train Discriminator Dy
         fake_y = self.Gy(x)
         Dy_real = self.Dy(y)
-        Dy_fake = self.Dy(self.fake_y_buffer.pop(fake_y))
+        Dy_fake = self.Dy(self.fake_y_buffer.pop(fake_y).detach())
         Dy_real_loss = mse(Dy_real, torch.ones_like(Dy_real, device=self.device))
         Dy_fake_loss = mse(Dy_fake, torch.zeros_like(Dy_fake, device=self.device))
         Dy_loss = Dy_real_loss + Dy_fake_loss
@@ -51,16 +51,14 @@ class CycleGAN(L.LightningModule):
 
         # Update discriminators
         d_optimizer.zero_grad()
-        self.manual_backward(D_loss, retain_graph=True)
+        self.manual_backward(D_loss)
         d_optimizer.step()
 
         # Train Generator Gx from Dx
-        fake_x = self.Gx(y)
         Dx_fake_g = self.Dx(fake_x)
         Gx_error = mse(Dx_fake_g, torch.ones_like(Dx_fake_g, device=self.device))
 
         # Train Generator Gy from Dy
-        fake_y = self.Gy(x)
         Dy_fake_g = self.Dy(fake_y)
         Gy_error = mse(Dy_fake_g, torch.ones_like(Dy_fake_g, device=self.device))
 
