@@ -10,6 +10,8 @@ from .options import TrainOptions
 from .networks import PatchDiscriminator, ResidualGenerator
 from torch.amp import autocast
 from ..util.image_buffer import ImageBuffer
+from lightning.pytorch.callbacks import LearningRateMonitor
+from torch.optim.lr_scheduler import LambdaLR
 
 
 class CycleGAN(L.LightningModule):
@@ -24,6 +26,7 @@ class CycleGAN(L.LightningModule):
         self.automatic_optimization = False
         self.fake_x_buffer = ImageBuffer(self.opt.buffer_size)
         self.fake_y_buffer = ImageBuffer(self.opt.buffer_size)
+        self.lr_monitor = LearningRateMonitor(logging_interval='epoch')
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -72,6 +75,11 @@ class CycleGAN(L.LightningModule):
         if batch_idx == len(self.trainer.datamodule.train_dataloader()) - 1:
             self.log_generated_images(batch)    
         return history
+    
+    def training_epoch_end(self):
+        schedulers = self.lr_schedulers()
+        for scheduler in schedulers:
+            scheduler.step()
 
     def log_generated_images(self, train_batch):
         x, y = train_batch
@@ -120,6 +128,14 @@ class CycleGAN(L.LightningModule):
             lr=self.opt.lr,
             betas=self.opt.betas
         )
+
+        def lambda_lr(epoch):
+            return 1.0 - max(0, epoch + 1 - self.opt.n_epochs) / float(self.opt.n_epochs_decay + 1)
+
+        scheduler_d = LambdaLR(optim_d, lr_lambda=lambda_lr)
+        scheduler_g = LambdaLR(optim_g, lr_lambda=lambda_lr)
+
+        return [optim_d, optim_g], [scheduler_d, scheduler_g]
 
         return [optim_d, optim_g]
 
