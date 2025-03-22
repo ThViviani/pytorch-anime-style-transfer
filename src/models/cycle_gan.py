@@ -76,7 +76,7 @@ class CycleGAN(L.LightningModule):
             self.log_generated_images(batch)    
         return history
     
-    def training_epoch_end(self):
+    def on_train_epoch_end(self):
         schedulers = self.lr_schedulers()
         for scheduler in schedulers:
             scheduler.step()
