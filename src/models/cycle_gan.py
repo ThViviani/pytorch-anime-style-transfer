@@ -31,49 +31,39 @@ class CycleGAN(L.LightningModule):
         l1  = nn.L1Loss()
         mse = nn.MSELoss()
 
-        # Train Discriminator Dx
+        # Train generators
         fake_x  = self.Gx(y)
-        Dx_real = self.Dx(x)
-        Dx_fake = self.Dx(self.fake_x_buffer.pop(fake_x).detach())
-        Dx_real_loss = mse(Dx_real, torch.ones_like(Dx_real, device=self.device))
-        Dx_fake_loss = mse(Dx_fake, torch.zeros_like(Dx_fake, device=self.device))
-
-        Dx_loss = Dx_real_loss + Dx_fake_loss
-
-        # Train Discriminator Dy
         fake_y = self.Gy(x)
-        Dy_real = self.Dy(y)
-        Dy_fake = self.Dy(self.fake_y_buffer.pop(fake_y).detach())
-        Dy_real_loss = mse(Dy_real, torch.ones_like(Dy_real, device=self.device))
-        Dy_fake_loss = mse(Dy_fake, torch.zeros_like(Dy_fake, device=self.device))
-        Dy_loss = Dy_real_loss + Dy_fake_loss
-        D_loss = (Dx_loss + Dy_loss) * 0.5
+        
+        self.set_requires_grad(self.Dx, False)
+        self.set_requires_grad(self.Dy, False)
 
-        # Update discriminators
-        d_optimizer.zero_grad()
-        self.manual_backward(D_loss)
-        d_optimizer.step()
-
-        # Train Generator Gx from Dx
-        Dx_fake_g = self.Dx(fake_x)
-        Gx_error = mse(Dx_fake_g, torch.ones_like(Dx_fake_g, device=self.device))
-
-        # Train Generator Gy from Dy
-        Dy_fake_g = self.Dy(fake_y)
-        Gy_error = mse(Dy_fake_g, torch.ones_like(Dy_fake_g, device=self.device))
-
-        # Cycle consistency loss
-        cycle_loss = ( l1(self.Gy(self.Gx(y)), y) + l1(self.Gx(self.Gy(x)), x) ) * self.opt.cycle_lambda
-
-        # Identity loss
-        # identity_loss = ( l1(self.Gx(x), x) + l1(self.Gy(y), y) ) * self.opt.identity_lambda
-        identity_loss = 0
+        Gx_error = self.generator_loss(self.Dx, fake_x, mse)
+        Gy_error = self.generator_loss(self.Dy, fake_y, mse)
+        cycle_loss = self.cycle_consistency_loss(x, y, l1)
+        identity_loss = self.identity_loss(x, y, l1)
         g_final_loss = Gx_error + Gy_error + cycle_loss + identity_loss
+        self.optimize(g_optimizer, g_final_loss)
 
-        # update generators
-        g_optimizer.zero_grad()
-        self.manual_backward(g_final_loss)
-        g_optimizer.step()
+        # Train Discriminators
+        self.set_requires_grad(self.Dx, True)
+        self.set_requires_grad(self.Dy, True)
+
+        Dx_loss = self.discriminator_loss(
+            self.Dx, 
+            x, 
+            self.fake_x_buffer.pop(fake_x.detach()),
+            mse
+        )
+
+        Dy_loss = self.discriminator_loss(
+            self.Dy,
+            y,
+            self.fake_y_buffer.pop(fake_y.detach()),
+            mse
+        )
+        D_loss = (Dx_loss + Dy_loss) * 0.5
+        self.optimize(d_optimizer, D_loss)
 
         history = {'loss_d': D_loss.item(), 'loss_g': g_final_loss.item()}
         self.log_dict(history, prog_bar=True)
@@ -132,3 +122,32 @@ class CycleGAN(L.LightningModule):
         )
 
         return [optim_d, optim_g]
+
+    def set_requires_grad(self, network, requires_grad):
+        """
+        Sets the requires_grad for all params of the network.
+        """
+        for param in network.parameters():
+            param.requires_grad = requires_grad
+
+    def optimize(self, optimizer, loss):
+        optimizer.zero_grad()
+        self.manual_backward(loss)
+        optimizer.step()
+
+    def generator_loss(self, discriminator, fake_data, loss_fn):
+        prediction = discriminator(fake_data)
+        return loss_fn(prediction, torch.ones_like(prediction, device=self.device))
+
+    def cycle_consistency_loss(self, x, y, loss_fn):
+        return (loss_fn(self.Gy(self.Gx(y)), y) + loss_fn(self.Gx(self.Gy(x)), x)) * self.opt.cycle_lambda
+
+    def identity_loss(self, x, y, loss_fn):
+        return (loss_fn(self.Gx(x), x) + loss_fn(self.Gy(y), y)) * self.opt.identity_lambda
+    
+    def discriminator_loss(self, discriminator, real_data, fake_data, loss_fn):
+        real_prediction = discriminator(real_data)
+        fake_prediction = discriminator(fake_data)
+        real_loss = loss_fn(real_prediction, torch.ones_like(real_prediction, device=self.device))
+        fake_loss = loss_fn(fake_prediction, torch.zeros_like(fake_prediction, device=self.device))
+        return real_loss + fake_loss
