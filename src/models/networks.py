@@ -251,7 +251,7 @@ class ResidualBlock(nn.Module):
         super().__init__()
 
         self.block = nn.Sequential(
-            GeneratorCNNBlock(channels, channels, activation="relu", use_dropout=True, kernel_size=3, padding=1, stride=1, norm_layer=norm_layer),
+            GeneratorCNNBlock(channels, channels, activation="relu", use_dropout=False, kernel_size=3, padding=1, stride=1, norm_layer=norm_layer),
             GeneratorCNNBlock(channels, channels, activation="identity", kernel_size=3, padding=1, stride=1, norm_layer=norm_layer)
         )
 
