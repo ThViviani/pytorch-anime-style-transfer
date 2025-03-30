@@ -31,6 +31,7 @@ class CycleGAN(L.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         d_optimizer, g_optimizer = self.optimizers()
+        d_scheduler, g_scheduler = self.lr_schedulers()
         l1  = nn.L1Loss()
         mse = nn.MSELoss()
 
@@ -47,6 +48,7 @@ class CycleGAN(L.LightningModule):
         identity_loss = self.identity_loss(x, y, l1)
         g_final_loss = Gx_error + Gy_error + cycle_loss + identity_loss
         self.optimize(g_optimizer, g_final_loss)
+        g_scheduler.step(epoch=self.current_epoch)
 
         # Train Discriminators
         self.set_requires_grad(self.Dx, True)
@@ -67,6 +69,7 @@ class CycleGAN(L.LightningModule):
         )
         D_loss = (Dx_loss + Dy_loss) * 0.5
         self.optimize(d_optimizer, D_loss)
+        d_scheduler.step(epoch=self.current_epoch)
 
         history = {'loss_d': D_loss.item(), 'loss_g': g_final_loss.item()}
         self.log_dict(history, prog_bar=True)
@@ -130,14 +133,12 @@ class CycleGAN(L.LightningModule):
         )
 
         def lambda_lr(epoch):
-            return 1.0 - max(0, epoch + 1 - self.opt.n_epochs) / float(self.opt.n_epochs_decay + 1)
+            return 1.0 - max(0, self.opt.last_epoch_in_prev_experiment + epoch + 1 - self.opt.n_epochs) / float(self.opt.n_epochs_decay + 1)
 
         scheduler_d = LambdaLR(optim_d, lr_lambda=lambda_lr)
         scheduler_g = LambdaLR(optim_g, lr_lambda=lambda_lr)
 
         return [optim_d, optim_g], [scheduler_d, scheduler_g]
-
-        return [optim_d, optim_g]
 
     def set_requires_grad(self, network, requires_grad):
         """

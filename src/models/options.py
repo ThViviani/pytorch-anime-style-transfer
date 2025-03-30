@@ -10,7 +10,7 @@ class TrainOptions:
                  buffer_size=50,
                  n_epochs_decay=100,
                  n_epochs=100,
-                 last_epoch_in_prev_experiment=100):
+                 last_epoch_in_prev_experiment=0):
         """Construct a train option.
         Parameters:
             lr (float)                          -- the learning rate for optimization solver
