@@ -24,12 +24,12 @@ class TrainOptions:
             last_epoch_in_prev_experiment (int) -- the number of last epoch in the prev experiment of the training.
         """
         
-        self.lr              = lr
-        self.l1_lambda       = l1_lambda
-        self.betas           = betas
-        self.cycle_lambda    = cycle_lambda
-        self.identity_lambda = identity_lambda
-        self.buffer_size     = buffer_size
-        self.n_epochs_decay  = n_epochs_decay
-        self.n_epochs        = n_epochs
-        self.last_epoch      = last_epoch_in_prev_experiment 
+        self.lr                            = lr
+        self.l1_lambda                     = l1_lambda
+        self.betas                         = betas
+        self.cycle_lambda                  = cycle_lambda
+        self.identity_lambda               = identity_lambda
+        self.buffer_size                   = buffer_size
+        self.n_epochs_decay                = n_epochs_decay
+        self.n_epochs                      = n_epochs
+        self.last_epoch_in_prev_experiment = last_epoch_in_prev_experiment 
