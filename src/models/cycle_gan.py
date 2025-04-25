@@ -120,12 +120,15 @@ class CycleGAN(L.LightningModule):
         )
 
     def configure_optimizers(self):
+
         optim_d = torch.optim.Adam(
+            params=itertools.chain(self.Dx.parameters(), self.Dy.parameters()),
             lr=self.opt.lr,
             betas=self.opt.betas,
         )
 
         optim_g = torch.optim.Adam(
+            params=itertools.chain(self.Gx.parameters(), self.Gy.parameters()),
             lr=self.opt.lr,
             betas=self.opt.betas,
         )
