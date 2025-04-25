@@ -120,22 +120,12 @@ class CycleGAN(L.LightningModule):
         )
 
     def configure_optimizers(self):
-        params = [
-           {'params': itertools.chain(self.Dx.parameters(), self.Dy.parameters()), 'initial_lr': self.opt.last_lr}
-        ]
-
         optim_d = torch.optim.Adam(
-            params,
             lr=self.opt.lr,
             betas=self.opt.betas,
         )
 
-        params = [
-           {'params': itertools.chain(self.Gx.parameters(), self.Gy.parameters()), 'initial_lr': self.opt.last_lr}
-        ]
-
         optim_g = torch.optim.Adam(
-            params,
             lr=self.opt.lr,
             betas=self.opt.betas,
         )
@@ -145,7 +135,6 @@ class CycleGAN(L.LightningModule):
             start_factor=1.0,
             end_factor=0.0,
             total_iters=self.opt.n_epochs,
-            last_epoch=self.opt.last_epoch_in_prev_experiment
         )
 
         scheduler_g = torch.optim.lr_scheduler.LinearLR(
@@ -153,7 +142,6 @@ class CycleGAN(L.LightningModule):
             start_factor=1.0,
             end_factor=0.0,
             total_iters=self.opt.n_epochs,
-            last_epoch=self.opt.last_epoch_in_prev_experiment
         )
 
 
