@@ -130,7 +130,7 @@ class CycleGAN(L.LightningModule):
         optim_g = torch.optim.Adam(
             itertools.chain(self.Gx.parameters(), self.Gy.parameters()),
             lr=self.opt.lr,
-            betas=self.opt.betas
+            betas=self.opt.betas,
             initial_lr=self.opt.last_lr
         )
 
