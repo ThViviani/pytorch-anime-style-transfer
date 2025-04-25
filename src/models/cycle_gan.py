@@ -48,7 +48,7 @@ class CycleGAN(L.LightningModule):
         identity_loss = self.identity_loss(x, y, l1)
         g_final_loss = Gx_error + Gy_error + cycle_loss + identity_loss
         self.optimize(g_optimizer, g_final_loss)
-        g_scheduler.step(epoch=self.current_epoch)
+        g_scheduler.step()
 
         # Train Discriminators
         self.set_requires_grad(self.Dx, True)
@@ -69,7 +69,7 @@ class CycleGAN(L.LightningModule):
         )
         D_loss = (Dx_loss + Dy_loss) * 0.5
         self.optimize(d_optimizer, D_loss)
-        d_scheduler.step(epoch=self.current_epoch)
+        d_scheduler.step()
 
         history = {'loss_d': D_loss.item(), 'loss_g': g_final_loss.item()}
         self.log_dict(history, prog_bar=True)
@@ -132,11 +132,22 @@ class CycleGAN(L.LightningModule):
             betas=self.opt.betas
         )
 
-        def lambda_lr(epoch):
-            return 1.0 - max(0, self.opt.last_epoch_in_prev_experiment + epoch + 1 - self.opt.n_epochs) / float(self.opt.n_epochs_decay + 1)
+        scheduler_d = torch.optim.lr_scheduler.LinearLR(
+            optimizer=optim_d,
+            start_factor=1.0,
+            end_factor=0.0,
+            total_iters=self.opt.n_epochs,
+            last_epoch=self.opt.last_epoch_in_prev_experiment
+        )
 
-        scheduler_d = LambdaLR(optim_d, lr_lambda=lambda_lr)
-        scheduler_g = LambdaLR(optim_g, lr_lambda=lambda_lr)
+        scheduler_g = torch.optim.lr_scheduler.LinearLR(
+            optimizer=optim_g,
+            start_factor=1.0,
+            end_factor=0.0,
+            total_iters=self.opt.n_epochs,
+            last_epoch=self.opt.last_epoch_in_prev_experiment
+        )
+
 
         return [optim_d, optim_g], [scheduler_d, scheduler_g]
 
