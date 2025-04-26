@@ -11,7 +11,7 @@ from .networks import PatchDiscriminator, ResidualGenerator
 from torch.amp import autocast
 from ..util.image_buffer import ImageBuffer
 from lightning.pytorch.callbacks import LearningRateMonitor
-from torch.optim.lr_scheduler import LambdaLR
+from torch.optim.lr_scheduler import SequentialLR, ConstantLR, LinearLR
 
 
 class CycleGAN(L.LightningModule):
@@ -119,6 +119,11 @@ class CycleGAN(L.LightningModule):
             }
         )
 
+    def __with_initial_lr(self, optimizer, initial_lr):
+        for param_group in optimizer.param_groups:
+            param_group['initial_lr'] = initial_lr
+        return optimizer
+
     def configure_optimizers(self):
 
         optim_d = torch.optim.Adam(
@@ -126,27 +131,35 @@ class CycleGAN(L.LightningModule):
             lr=self.opt.lr,
             betas=self.opt.betas,
         )
+        self.__with_initial_lr(optim_d, self.opt.lr)
 
         optim_g = torch.optim.Adam(
             params=itertools.chain(self.Gx.parameters(), self.Gy.parameters()),
             lr=self.opt.lr,
             betas=self.opt.betas,
         )
+        self.__with_initial_lr(optim_g, self.opt.lr)
 
-        scheduler_d = torch.optim.lr_scheduler.LinearLR(
+        constantlr_total_iters = len(self.trainer.datamodule.train_dataloader()) * self.opt.n_epochs
+        linearlr_total_iters = len(self.trainer.datamodule.train_dataloader()) * self.opt.n_epochs_decay
+
+        scheduler_d = SequentialLR(
             optimizer=optim_d,
-            start_factor=1.0,
-            end_factor=0.0,
-            total_iters=self.opt.n_epochs,
+            schedulers=[
+                ConstantLR(optim_d, factor=1.0, total_iters=constantlr_total_iters),
+                LinearLR(optim_d, start_factor=1.0, end_factor=0.0, total_iters=linearlr_total_iters)
+            ],
+            milestones=[constantlr_total_iters]
         )
 
-        scheduler_g = torch.optim.lr_scheduler.LinearLR(
+        scheduler_g = SequentialLR(
             optimizer=optim_g,
-            start_factor=1.0,
-            end_factor=0.0,
-            total_iters=self.opt.n_epochs,
+            schedulers=[
+                ConstantLR(optim_g, factor=1.0, total_iters=constantlr_total_iters),
+                LinearLR(optim_g, start_factor=1.0, end_factor=0.0, total_iters=linearlr_total_iters)
+            ],
+            milestones=[constantlr_total_iters]
         )
-
 
         return [optim_d, optim_g], [scheduler_d, scheduler_g]
 
