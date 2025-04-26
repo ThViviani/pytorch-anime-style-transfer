@@ -9,9 +9,7 @@ class TrainOptions:
                  identity_lambda=0,
                  buffer_size=50,
                  n_epochs_decay=100,
-                 n_epochs=100,
-                 last_epoch_in_prev_experiment=0,
-                 last_lr=2e-4):
+                 n_epochs=100):
         """Construct a train option.
         Parameters:
             lr (float)                          -- the learning rate for optimization solver
@@ -34,5 +32,3 @@ class TrainOptions:
         self.buffer_size                   = buffer_size
         self.n_epochs_decay                = n_epochs_decay
         self.n_epochs                      = n_epochs
-        self.last_epoch_in_prev_experiment = last_epoch_in_prev_experiment
-        self.last_lr                       = last_lr 
