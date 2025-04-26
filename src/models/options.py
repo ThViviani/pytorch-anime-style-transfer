@@ -20,8 +20,6 @@ class TrainOptions:
             buffer_size (int)                   -- the size of image buffer that stores previously generated images
             n_epochs_decay (int)                -- the number of epochs over which the learning rate will linearly decay to zero
             n_epochs (int)                      -- the number of epochs with the initial learning rate before it starts to decay
-            last_epoch_in_prev_experiment (int) -- the number of last epoch in the prev experiment of the training.
-            last_lr (int)                       -- the lr in the last_epoch_in_prev_experiment.
         """
         
         self.lr                            = lr
