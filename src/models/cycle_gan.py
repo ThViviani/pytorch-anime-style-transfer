@@ -12,6 +12,7 @@ from torch.amp import autocast
 from ..util.image_buffer import ImageBuffer
 from lightning.pytorch.callbacks import LearningRateMonitor
 from torch.optim.lr_scheduler import SequentialLR, ConstantLR, LinearLR
+from torchmetrics.image import FrechetInceptionDistance
 
 
 class CycleGAN(L.LightningModule):
@@ -27,6 +28,10 @@ class CycleGAN(L.LightningModule):
         self.fake_x_buffer = ImageBuffer(self.opt.buffer_size)
         self.fake_y_buffer = ImageBuffer(self.opt.buffer_size)
         self.lr_monitor = LearningRateMonitor(logging_interval='epoch')
+        self.fid = FrechetInceptionDistance(normalize=True)
+
+    def setup(self, stage):
+        self.fid.to(self.device)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -191,3 +196,19 @@ class CycleGAN(L.LightningModule):
         real_loss = loss_fn(real_prediction, torch.ones_like(real_prediction, device=self.device))
         fake_loss = loss_fn(fake_prediction, torch.zeros_like(fake_prediction, device=self.device))
         return real_loss + fake_loss
+    
+    def validation_step(self, batch, batch_idx):
+        human_images, anime_images = batch
+        anime_images_hat = self.Gy(human_images)
+
+        anime_images = (anime_images + 1.) / 2. 
+        anime_images_hat = (anime_images_hat + 1.) / 2.
+
+        self.fid.update(anime_images, real=True)
+        self.fid.update(anime_images_hat, real=False)
+
+    def on_validation_epoch_end(self):
+        current_fid_on_val = self.fid.compute()
+        self.fid.reset()
+        history = {'fid_on_val': current_fid_on_val}
+        self.log_dict(history, prog_bar=True)
