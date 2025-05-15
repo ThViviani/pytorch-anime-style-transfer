@@ -28,10 +28,12 @@ class CycleGAN(L.LightningModule):
         self.fake_x_buffer = ImageBuffer(self.opt.buffer_size)
         self.fake_y_buffer = ImageBuffer(self.opt.buffer_size)
         self.lr_monitor = LearningRateMonitor(logging_interval='epoch')
-        self.fid = FrechetInceptionDistance(normalize=True)
+        self.fid = None
 
     def setup(self, stage):
-        self.fid.to(self.device)
+        if self.fid is None:
+            self.fid = FrechetInceptionDistance(normalize=True).to(self.device) 
+            self.fid.persistent(False)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
