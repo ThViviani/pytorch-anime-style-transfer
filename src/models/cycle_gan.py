@@ -32,8 +32,9 @@ class CycleGAN(L.LightningModule):
 
     def setup(self, stage):
         if self.fid is None:
-            self.fid = FrechetInceptionDistance(normalize=True).to(self.device) 
-            self.fid.persistent(False)
+            fid_module = FrechetInceptionDistance(normalize=True).to(self.device) 
+            fid_module.persistent(False)
+            self.__dict__['fid'] = fid_module
 
     def training_step(self, batch, batch_idx):
         x, y = batch
