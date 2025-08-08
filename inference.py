@@ -56,7 +56,7 @@ def get_last_checkpoint():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="CycleGAN inference: translate photos A→B"
+        description="CycleGAN inference: translate human faces to anime style faces."
     )
     parser.add_argument("input",  help="path to input photo")
     
