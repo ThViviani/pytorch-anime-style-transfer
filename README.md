@@ -5,92 +5,68 @@ An educational project to implement image-to-image translation for anime style t
 
 # Main goal
 
-This repository contains the solution for the [Name of the Data Science Competition/Homework/etc] by [Your Name]. The goal of this competition was to [Briefly describe the problem statement].
+The goal of this project is to implement and understand how style transfer works [1], [2]. After that, aplied it to:
 
-In this section, provide a brief overview of your solution. Explain the motivation behind your approach and the main challenges you faced during the development process.
+**Anime sketches colorization:** 
+
+![Anime sketches colorization](/assets/pix2pix.gif)
+- Paired dataset: [Anime Sketch Colorization (Pair)](https://www.kaggle.com/datasets/ktaebum/anime-sketch-colorization-pair)
+- Result [`notebooks/pix2pix_colorization.ipynb`](./notebooks/pix2pix_colorization.ipynb)
+
+**Human faces to anime faces style transfer:**
+![cycle gan train loop](/assets/cycle_gan_train_loop.gif) 
+
+- unpaired dataset (a combination of two datasets): 
+    - Human faces: [Faces Dataset (Small)](https://www.kaggle.com/datasets/tommykamaz/faces-dataset-small)
+    - Anime faces: [High-Resolution Anime Face Dataset (512x512)](https://www.kaggle.com/datasets/subinium/highresolution-anime-face-dataset-512x512)
+
+- There are some examples of style transfer and code for the train [`notebooks/cycle_gan.ipynb`](./notebooks/cycle_gan.ipynb)
+
+# How to use
+
+1. **Clone the repository**
+
+   ```bash
+   git clone https://github.com/ThViviani/pytorch-anime-style-transfer.git
+   cd pytorch-anime-style-transfer
 
 
-# Solution
-
-In this section, provide a brief overview of your solution. Explain the motivation behind your approach and the main challenges you faced during the development process.
-
-
-Describe the data used in this competition, including the source, the type of data, and any preprocessing steps that were performed.
-
-
-Explain the methods and algorithms used in your solution. Provide a high-level overview of your workflow, including any key steps or decisions made during the development process.
+2. (Optional) Create and activate a virtual environment:
+    ```bash 
+    python -m venv venv
+    source venv/bin/activate  # for Linux/macOS
+    venv\Scripts\activate     # for Windows
 
 
-Present the results of your solution. Include relevant metrics and compare your results to the competition baseline, if available.
+2. **Installation**
 
-
-# How to
-
-Provide instructions on how to use your solution. This may include steps to clone the repository, install dependencies, and run the code.
-
-
-## Requirements
-Requirements is stored in [`requirements.txt`](requirements.txt):
-
-    # external requirements
-    pandas
-    scikit-learn
-
-## Installation
-
+    ```bash
     pip install -r requirements.txt
 
-## Usage example
+3. **Human face to anime face transfer**
 
-    python src/train.py
+   Run inference on a photo:
 
+   ```bash
+   python inference.py path/to/your/photo.jpg path/to/result/
+- path/to/your/photo.jpg — required, path to the input image
+- path/to/result/ — optional, path to the output directory (default: ./)
 
-## Project Organization
+## Checkpoints
 
+You can download the pretrained checkpoints from the 
+- [Pix2pix checkpoint](https://huggingface.co/ThViviani/pix2pix_for_colorization_anime_sketches/tree/main)
+- [cycle gan checkpoint](https://huggingface.co/ThViviani/cycle_gan_for_anime2human_style_transfer)
 
-The directory structure of your new project looks like this: 
-
-```
-├── LICENSE
-├── README.md          <- The top-level README for developers using this project.
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`.
-│
-├── setup.py           <- makes project pip installable (pip install -e .) so src can be
-│                         imported.
-│
-├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
-│
-├── models             <- Trained and serialized models, model predictions, or model summaries.
-│
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
-│
-├── misc               <- Miscellaneous files: figures, docker files, additional markdown files, etc.
-│
-└── src                <- Source code for use in this project. The written name of the project
-   │                      will be used.
-   ├── __init__.py     <- Makes src a Python module.
-   │
-   ├── data            <- Module to download, generate data or turn raw data into features
-   │   │                  for modeling.
-   │   ├── make_dataset.py
-   │   └── build_features.py
-   │
-   ├── models          <- Module to train models and then use trained models to make
-   │   │                  predictions.
-   │   └── baseline.py
-   │
-   └── visualization   <- Scripts to create exploratory and results oriented visualizations.
-       └── visualize.py
-```
+How to do it see to get_last_checkpoint method in the [here](./inference.py)
 
 
---------
+## References
 
-<p><small>Project based on the <a target="_blank" href="https://github.com/mitrofanov-m/cookiecutter-simple-data-science">cookiecutter simple data science project template</a>. #cookiecuttersimpledatascience</small></p>
+[1] Isola P., Zhu J.-Y., Zhou T., Efros A.A. Image-to-Image Translation with Conditional Adversarial Networks. URL: https://doi.org/10.48550/arXiv.1611.07004
+
+[2] Zhu J.-Y., Park T., Isola P., Efros A.A. Unpaired Image-to-Image Translation using Cycle-Consistent Adversarial Networks. URL: https://doi.org/10.48550/arXiv.1703.10593
+
+---
+
+*Last updated: August 8, 2025*
